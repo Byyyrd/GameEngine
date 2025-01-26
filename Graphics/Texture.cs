@@ -55,12 +55,7 @@ namespace GameEngine.Graphics
             _gl.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
 
         }
-        public void Use(uint textureLoc)
-        {
-            _gl.EnableVertexAttribArray(textureLoc);
-            _gl.VertexAttribPointer(textureLoc, 2, VertexAttribPointerType.Float, false, _stride, (void*)(3 * sizeof(float)));
 
-        }
         public void Bind()
         {
             _gl.ActiveTexture(TextureUnit.Texture0);

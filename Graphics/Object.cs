@@ -1,6 +1,7 @@
 ﻿using Silk.NET.Maths;
 using Silk.NET.OpenGL;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 
 namespace GameEngine.Graphics
 {
@@ -8,14 +9,15 @@ namespace GameEngine.Graphics
     {
         // TODO: Make Object display at centere not bottom left
         public Transformation Transformation;
-        protected Texture? _texture;
+		public int SpritePosition;
+		protected readonly List<Texture?> _textures = new();
         protected GL _gl;
         protected uint _program;
         protected uint _stride;
         protected VertexArrayObject<float, uint> _vao;
         protected BufferObject<float> _vbo;
         protected BufferObject<uint> _ebo;
-
+        protected int currentTexture = 0;
         protected float[] _vertices = {
         // positions          // texture coords
          0.5f,  0.5f, 0.0f,     1.0f, 1.0f, // top right
@@ -23,7 +25,7 @@ namespace GameEngine.Graphics
         -0.5f, -0.5f, 0.0f,     0.0f, 0.0f, // bottom left
         -0.5f,  0.5f, 0.0f,     0.0f, 1.0f  // top left 
         };
-        private uint[] _indices =
+        protected uint[] _indices =
         {
                 0u, 1u, 3u,
                 1u, 2u, 3u
@@ -48,23 +50,31 @@ namespace GameEngine.Graphics
             _vao.AttributePointer(0, 3, _stride, 0);
             _vao.AttributePointer(1, 2, _stride, 3);
         }
+        public unsafe virtual void Render()
+        {
+            this.Use();
+            _gl.DrawElements(GLEnum.Triangles, (uint)_indices.Length, GLEnum.UnsignedInt, (void*)(0 * sizeof(uint)));
+        }
         public virtual void Use()
         {
-            Transformation.Use();
-            _texture?.Bind();
+			_gl.UseProgram(_program);
+			Transformation.Use();
+            _textures[currentTexture]?.Bind();
             _vao.Bind();
-            _vbo.Bind();
-            _ebo.Bind();
         }
-        public virtual void NewTexture(uint _textureLoc, string path)
+        public virtual void NewTexture(string path, int index)
         {
-            _texture = new Texture(_gl, _program, _stride, path);
-            _texture?.Use(_textureLoc);
-            _texture?.CreateTexture();
-            if (_texture != null)
+            while (_textures.Count - 1 < index)
             {
-                Transformation.Scale.X = _texture.Width / OpenGl.WINDOW_WIDTH;
-                Transformation.Scale.Y = _texture.Heigth / OpenGl.WINDOW_HEIGTH;
+                _textures.Add(null);
+            }
+            _textures[index] = new Texture(_gl, _program, _stride, path);
+
+            _textures[index]?.CreateTexture();
+            if (_textures[index] != null)
+            {
+                Transformation.Scale.X = _textures[index].Width / OpenGl.WINDOW_WIDTH;
+                Transformation.Scale.Y = _textures[index].Heigth / OpenGl.WINDOW_HEIGTH;
             }
         }
         [MemberNotNull(nameof(Transformation))]

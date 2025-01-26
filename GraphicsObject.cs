@@ -15,5 +15,10 @@ namespace GameEngine
         public abstract void OnDraw(float dt);
         public abstract void OnUpdate(float dt);
 
+        public GraphicsObject()
+        {
+
+        }
+
     }
 }

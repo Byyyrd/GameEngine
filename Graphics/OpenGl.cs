@@ -24,6 +24,8 @@ namespace GameEngine.Graphics
         public static Action<float>? Render;
         public static Action<float>? Update;
 
+        private static SpritesheetRenderer? _spritesheet;
+
         public static void Start()
         {
             WindowOptions options = WindowOptions.Default with
@@ -43,7 +45,6 @@ namespace GameEngine.Graphics
             _gl.ClearColor(Color.CornflowerBlue);
 
             _program = _gl.CreateProgram();
-
             TexturedShader.Use(_gl, _program);
 
             _primitiveProgram = _gl.CreateProgram();
@@ -53,6 +54,10 @@ namespace GameEngine.Graphics
             _pointRenderer = new(_gl, 6 * sizeof(float), PrimitiveType.Points);
             _lineRenderer = new(_gl, 6 * sizeof(float), PrimitiveType.Lines);
             SetupInputHandeling();
+
+            _spritesheet = new(_gl,_program, 5 * sizeof(float),10,8);
+            _spritesheet.NewTexture("link.png",0);
+            _spritesheet.SetSpritePositionY(7);
 
             Load?.Invoke();
 
@@ -69,6 +74,12 @@ namespace GameEngine.Graphics
                 if (key.IsDown)
                     key.KeyAction?.Invoke(deltaTime);
             }
+
+            if (IsKeyDown(Key.D))
+            {
+                _spritesheet.NextSpriteX();
+            }
+
             Update?.Invoke((float)deltaTime);
         }
 
@@ -85,7 +96,8 @@ namespace GameEngine.Graphics
             _lineRenderer?.Render();
             _pointRenderer?.Render();
 
-        }
+            _spritesheet?.Render();
+		}
 
         public static void DrawPoint(Vector2D<float> pos, Vector3D<float> color)
         {
@@ -129,9 +141,6 @@ namespace GameEngine.Graphics
             _triangleRenderer?.AddElement(indices, vertices);
         }
 
-
-
-
         private static Vector2D<float> WindowPosToScreenPos(Vector2D<float> pos)
         {
             float x = Lerp(-1, 1, Normalize(0, WINDOW_WIDTH, pos.X));
@@ -151,16 +160,6 @@ namespace GameEngine.Graphics
         {
             return value / max - min / max;
         }
-
-
-
-
-
-
-
-
-
-
 
         private static void SetupKeyEvents()
         {
@@ -182,12 +181,23 @@ namespace GameEngine.Graphics
         private static void KeyDown(IKeyboard keyboard, Key key, int keyCode)
         {
             _keys.TryGetValue(key, out KeyHandler? keyHandler);
+			if (keyHandler == null)
+                _keys.Add(key, new KeyHandler());
+            
             keyHandler?.SetIsDown(true);
         }
         private static void KeyUp(IKeyboard keyboard, Key key, int keyCode)
         {
             _keys.TryGetValue(key, out KeyHandler? keyHandler);
-            keyHandler?.SetIsDown(false);
+			if (keyHandler == null)
+				_keys.Add(key, new KeyHandler());
+			keyHandler?.SetIsDown(false);
+        }
+
+        public static bool IsKeyDown(Key key)
+        {
+			_keys.TryGetValue(key, out KeyHandler? keyHandler);
+            return keyHandler?.IsDown ?? false;
         }
         private class KeyHandler
         {
